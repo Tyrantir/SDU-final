@@ -72,7 +72,15 @@ def depois(resp):
     usuario = g.get("usuario")
     extra = f" usuario={usuario}" if usuario else ""
     registrar(f"{request.method} {request.path}{extra} status={resp.status_code} tempo_ms={ms}")
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    resp.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return resp
+
+
+@app.route("/<path:_qualquer>", methods=["OPTIONS"])
+def preflight_cors(_qualquer):
+    return "", 204
 
 
 # ---------------------------------------------------------------- autenticacao

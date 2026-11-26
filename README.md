@@ -19,6 +19,8 @@ python servidor.py
 
 Servidor sobe em `http://localhost:8000` (outra porta: `PORTA=9000 python servidor.py`).
 
+Abrir `index.html` (duplo clique ou `start index.html`) com servidor rodando — front de teste manual já aponta pra `http://localhost:8000`.
+
 ## Usuários de teste
 
 Guardados só como hash SHA-256 em `USUARIOS` (`servidor.py`). Nenhuma senha em claro no repositório.
@@ -51,4 +53,4 @@ O decorator `exige(permissao)` valida o token (ausente/inválido/expirado → 40
 
 ## Testar
 
-Ver `ENTREGA.md` para exemplos de `curl` de cada rota, ou usar o front-end de teste manual em [sdu-final-teste-frontend](https://github.com/Tyrantir/sdu-final-teste-frontend).
+Ver `ENTREGA.md` para exemplos de `curl` de cada rota, ou usar `index.html` (front-end de teste manual, já neste repo).

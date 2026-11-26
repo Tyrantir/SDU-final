@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Teste manual - Central de Consultas</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #0f1115; color: #e6e6e6; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 2.5rem; border-bottom: 1px solid #333; padding-bottom: .3rem; }
+  fieldset { border: 1px solid #333; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  label { display: block; margin: .5rem 0 .2rem; font-size: .85rem; color: #aaa; }
+  input, select { width: 100%; box-sizing: border-box; padding: .5rem; border-radius: 6px; border: 1px solid #444; background: #1b1e26; color: #e6e6e6; }
+  button { margin-top: .8rem; padding: .5rem 1rem; border-radius: 6px; border: none; background: #4f7cff; color: white; cursor: pointer; font-weight: 600; }
+  button:hover { background: #3a63e0; }
+  pre { background: #1b1e26; border: 1px solid #333; border-radius: 6px; padding: .8rem; white-space: pre-wrap; word-break: break-all; min-height: 1.2rem; }
+  .ok { border-color: #2fa44c !important; }
+  .erro { border-color: #d64545 !important; }
+  .topo { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .token-atual { font-size: .8rem; color: #8bc98b; word-break: break-all; }
+</style>
+</head>
+<body>
+
+<div class="topo">
+  <h1>Teste manual · Central de Consultas (Grupo 1)</h1>
+</div>
+
+<label>URL do servidor</label>
+<input id="base-url" value="http://localhost:8000">
+<div class="token-atual">Token atual: <span id="token-mostrado">(nenhum)</span></div>
+
+<h2>POST /login</h2>
+<fieldset>
+  <label>usuario</label>
+  <input id="login-usuario" value="admin">
+  <label>senha</label>
+  <input id="login-senha" value="admin123">
+  <button onclick="login()">Enviar</button>
+  <pre id="login-resultado"></pre>
+</fieldset>
+
+<h2>GET /saude</h2>
+<fieldset>
+  <button onclick="saude()">Enviar</button>
+  <pre id="saude-resultado"></pre>
+</fieldset>
+
+<h2>GET /perfil</h2>
+<fieldset>
+  <button onclick="perfil()">Enviar (usa token atual)</button>
+  <pre id="perfil-resultado"></pre>
+</fieldset>
+
+<h2>POST /processamento/basico e /processamento/avancado</h2>
+<fieldset>
+  <label>n</label>
+  <input id="proc-n" value="100000">
+  <label>rota</label>
+  <select id="proc-rota">
+    <option value="basico">basico</option>
+    <option value="avancado">avancado</option>
+  </select>
+  <button onclick="processar()">Enviar (usa token atual)</button>
+  <pre id="proc-resultado"></pre>
+</fieldset>
+
+<h2>GET /consultas/cep/&lt;cep&gt;</h2>
+<fieldset>
+  <label>cep (8 digitos)</label>
+  <input id="cep-valor" value="01001000">
+  <button onclick="cep()">Enviar</button>
+  <pre id="cep-resultado"></pre>
+</fieldset>
+
+<h2>GET /consultas/clima</h2>
+<fieldset>
+  <label>latitude</label>
+  <input id="clima-lat" value="-23.5">
+  <label>longitude</label>
+  <input id="clima-lon" value="-46.6">
+  <button onclick="clima()">Enviar</button>
+  <pre id="clima-resultado"></pre>
+</fieldset>
+
+<h2>GET /logs</h2>
+<fieldset>
+  <button onclick="logs()">Enviar (usa token atual, precisa permissao avancado)</button>
+  <pre id="logs-resultado"></pre>
+</fieldset>
+
+<script>
+let token = null;
+
+function base() {
+  return document.getElementById("base-url").value.replace(/\/$/, "");
+}
+
+function mostrar(id, dados, status) {
+  const el = document.getElementById(id);
+  el.textContent = `status ${status}\n` + JSON.stringify(dados, null, 2);
+  el.className = status >= 200 && status < 300 ? "ok" : "erro";
+}
+
+async function chamar(id, metodo, caminho, corpo, comToken) {
+  try {
+    const cab = { "Content-Type": "application/json" };
+    if (comToken && token) cab["Authorization"] = "Bearer " + token;
+    const resp = await fetch(base() + caminho, {
+      method: metodo,
+      headers: cab,
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    const dados = await resp.json().catch(() => ({}));
+    mostrar(id, dados, resp.status);
+    return dados;
+  } catch (e) {
+    mostrar(id, { erro: "falha de rede: " + e.message }, 0);
+    return null;
+  }
+}
+
+async function login() {
+  const usuario = document.getElementById("login-usuario").value;
+  const senha = document.getElementById("login-senha").value;
+  const dados = await chamar("login-resultado", "POST", "/login", { usuario, senha }, false);
+  if (dados && dados.token) {
+    token = dados.token;
+    document.getElementById("token-mostrado").textContent = token;
+  }
+}
+
+function saude() {
+  chamar("saude-resultado", "GET", "/saude", null, false);
+}
+
+function perfil() {
+  chamar("perfil-resultado", "GET", "/perfil", null, true);
+}
+
+function processar() {
+  const n = parseInt(document.getElementById("proc-n").value, 10);
+  const rota = document.getElementById("proc-rota").value;
+  chamar("proc-resultado", "POST", "/processamento/" + rota, { n }, true);
+}
+
+function cep() {
+  const valor = document.getElementById("cep-valor").value.trim();
+  chamar("cep-resultado", "GET", "/consultas/cep/" + valor, null, false);
+}
+
+function clima() {
+  const lat = document.getElementById("clima-lat").value;
+  const lon = document.getElementById("clima-lon").value;
+  chamar("clima-resultado", "GET", `/consultas/clima?latitude=${lat}&longitude=${lon}`, null, false);
+}
+
+function logs() {
+  chamar("logs-resultado", "GET", "/logs", null, true);
+}
+</script>
+
+</body>
+</html>
